@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Profile Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        input, button {
+            padding: 10px;
+            width: 300px;
+            margin: 10px 0;
+        }
+        .profile-container {
+            text-align: center;
+        }
+        .profile-container img {
+            width: 150px;
+            height: 150px;
+        }
+        .counter {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Player Profile QR Code Tracker</h1>
+    <p>Enter a player's name to generate their profile and QR code.</p>
+    <input type="text" id="playerNameInput" placeholder="Enter player's name" />
+    <button onclick="generatePlayerProfile()">Generate Player Profile</button>
+
+    <h2>Player Profile Link</h2>
+    <div id="profileLinkContainer"></div>
+
+    <h2>Scan Player's QR Code</h2>
+    <div id="profileContainer"></div>
+
+    <script>
+        // Generate and display player profile
+        function generatePlayerProfile() {
+            const playerName = document.getElementById("playerNameInput").value;
+            if (playerName === "") {
+                alert("Please enter a player's name.");
+                return;
+            }
+
+            // Create unique link for player profile
+            const playerId = encodeURIComponent(playerName.toLowerCase().replace(/\s+/g, '-')); // Unique ID for the player
+            const playerProfileLink = `${window.location.origin}?player=${playerId}`;
+
+            // Store the profile data (name, counter) in localStorage using the playerId
+            const profileData = {
+                name: playerName,
+                counter: 0
+            };
+            localStorage.setItem(playerId, JSON.stringify(profileData));
+
+            // Generate the QR code for the profile link
+            QRCode.toDataURL(playerProfileLink, function (error, url) {
+                if (error) {
+                    console.error(error);
+                    alert("Error generating QR code.");
+                    return;
+                }
+
+                // Display the generated QR code and link
+                const qrImage = document.createElement("img");
+                qrImage.src = url;
+                qrImage.alt = `QR Code for ${playerName}`;
+
+                const profileLinkText = document.createElement("p");
+                profileLinkText.innerHTML = `Profile Link: <a href="${playerProfileLink}" target="_blank">${playerProfileLink}</a>`;
+
+                document.getElementById("profileLinkContainer").innerHTML = '';
+                document.getElementById("profileLinkContainer").appendChild(qrImage);
+                document.getElementById("profileLinkContainer").appendChild(profileLinkText);
+
+                // Clear input field
+                document.getElementById("playerNameInput").value = "";
+            });
+        }
+
+        // Load profile when a player link is accessed
+        window.onload = function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const playerId = urlParams.get('player');
+
+            if (playerId && localStorage.getItem(playerId)) {
+                const profileData = JSON.parse(localStorage.getItem(playerId));
+
+                // Display player profile
+                displayPlayerProfile(profileData, playerId);
+            }
+        };
+
+        function displayPlayerProfile(profileData, playerId) {
+            const profileContainer = document.getElementById("profileContainer");
+
+            // Create profile container
+            const profileDiv = document.createElement("div");
+            profileDiv.className = "profile-container";
+
+            // Create name label
+            const nameLabel = document.createElement("h3");
+            nameLabel.textContent = profileData.name;
+
+            // Create counter label
+            const counterLabel = document.createElement("p");
+            counterLabel.className = "counter";
+            counterLabel.textContent = "Counter: " + profileData.counter;
+
+            // Create increment button
+            const incrementButton = document.createElement("button");
+            incrementButton.textContent = "Add 1 to Counter";
+            incrementButton.onclick = function () {
+                profileData.counter++;
+                counterLabel.textContent = "Counter: " + profileData.counter;
+
+                // Save updated profile back to localStorage
+                localStorage.setItem(playerId, JSON.stringify(profileData));
+            };
+
+            // Append elements to profile div
+            profileDiv.appendChild(nameLabel);
+            profileDiv.appendChild(counterLabel);
+            profileDiv.appendChild(incrementButton);
+
+            // Append profile div to container
+            profileContainer.innerHTML = ''; // Clear previous profile
+            profileContainer.appendChild(profileDiv);
+        }
+    </script>
+</body>
+</html>
